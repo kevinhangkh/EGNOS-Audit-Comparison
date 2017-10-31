@@ -1,0 +1,1354 @@
+<!-- /***************************************************************************
+ * Copyright : Thales Alenia Space
+ * Project: EGNOS
+ * File: Audit_comparison.html
+ * Date: 17/03/17
+ * Purpose : Compare audit xml file and SWCF xml file
+ * Language : HTML and JavaScript
+ * Author : Kevin HANG
+ * History :
+ * Problems : The version comparison is using the includes() method which
+ * can be tricky
+ *
+ * Version | Date | Name | Change History
+ * 01.00 | 17/03/17 | KH | First Creation
+ *
+ ***************************************************************************/ -->
+
+<!DOCTYPE html>
+<html style="font-family:verdana;">
+<head>
+
+	<style type="text/css">
+		h1{
+			font-family: Verdana, Geneva, sans-serif;
+		}
+
+		button{
+			font-size: 155%;
+		}
+
+		input{
+			font-size: 150%;
+		}
+
+		table{
+			border-collapse: collapse;
+			width: 100%;
+			font-family: Verdana, Geneva, sans-serif;
+		}
+
+		table, td{
+			padding: 8px;
+			text-align: left;
+			border-bottom: 1px solid #ddd;
+		}
+
+		tr:hover{background-color: #cbe2ed}
+	</style>
+
+	<h1>Audit comparison</h1>
+
+	<h3>
+		The purpose of this tool is to compare the audit results with the SoftWare Configuration File (SWCF).<br>
+		It will automatically compare the audit.xml and SWCF.xml found in the current/ and SWCF/ folders.<br><br>
+
+		The table displays the results of the comparison in two colors:<br>
+		- Red for different version<br>
+		- No color if version is missing in audit<br>
+		- Green for same version<br>
+
+		<br>
+		Click on the "Manual Comparison" button to compare audit.xml and SWCF.xml found in the manual/ folder.
+		<br>
+	</h3>
+</head>
+
+<body>
+
+	<p id="test"></p>
+
+	<button type="button" id="btn" onclick="eraseTable(); readXMLAuditFromSource(); readXMLSWCFFromSource(); compare();">Manual Comparison</button>
+
+	<div id="table"></div>
+
+	<h2 id="result"></h2>
+	<table id="tableauResult" style="width:100%" border="1"></table>
+
+	<script type="text/javascript">
+
+	//GLOBAL VARIABLES AUDIT
+	var arrayTimestamps = [];
+	var arrayEgnosAddr = [];
+	var arrayAssetName = [];
+	var arrayName = [];
+	var arrayNumber = [];
+	var arrayVers = [];
+	var arrayType = [];
+
+	//GLOBAL VARIABLES SWCF
+	var arrayFilename = [];
+	var arrayDirectory = [];
+	var arrayFileType = [];
+	var arrayFileCode = [];
+	var arrayAsset = [];
+	var arrayEgnosAddress = [];
+	var arrayVersion = [];
+	var arrayMD5 = [];
+	var arrayNewFile = [];
+
+	//GLOBAL VARIABLES FEE CSV
+	var arrayCSVEgnosAddr = [];
+	var arrayCSVFEESignSWVersion = [];
+	var arrayCSVFEESysContact = [];
+
+	//RESULT TABLE VARIABLES
+	var resultAsset = [];
+	var resultEgnosAddrAudit = [];
+	var resultEgnosAddrSWCF = [];
+	var resultNameAudit = [];
+	var resultNameSWCF = [];
+	var resultVersionAudit = [];
+	var resultVersionSWCF = [];
+	var resultFileCode = [];
+	var confOrSoft = [];
+
+	var resultColor = [];
+
+
+
+	//CALLING FUNCTIONS
+	readXMLAudit();
+	readXMLSWCF();
+	compare();
+
+/*****************************************************************************
+ * Name : readXMLAudit()
+ * Purpose : Read the audit xml file
+ * Argument I/O: None  
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+		function readXMLAudit(){
+
+		var theDiv = document.getElementById("table");
+		var content;
+
+		// var name = document.getElementById("fileInput");
+		
+		// name = name.value;
+		// alert("Name of file: " + name);
+		// document.getElementById("audit").innerHTML = name;
+
+		var name = "current/audit.xml";
+
+		var request = new XMLHttpRequest();
+		request.open("GET",name,false);
+		request.send();
+		var xml = request.responseXML;
+
+		var audits = xml.getElementsByTagName("audit");
+
+		//Reading XML
+		for (var i = 0; i < audits.length; i++) {
+
+			var audit = audits[i];
+			var timestamps = audit.getElementsByTagName("timestamp");
+
+
+			var assets = audit.getElementsByTagName("asset");
+
+			for (var k = 0; k < assets.length; k++) {
+
+				//console.log("Timestamp: " + timestamps[k].childNodes[0].nodeValue);
+
+				//write in div
+				content = document.createTextNode(timestamps[k].childNodes[0].nodeValue);
+				// theDiv.appendChild(content);
+
+				//write in array
+				arrayTimestamps[k] = document.createTextNode(timestamps[k].childNodes[0].nodeValue);
+
+				var asset = assets[k];
+				var egnosAddresses = asset.getElementsByTagName("egnos_address");
+
+				for (var l = 0; l < egnosAddresses.length; l++) {
+
+					//console.log("EGNOS Address: " + egnosAddresses[l].childNodes[0].nodeValue);
+
+					//write in div
+					content = document.createTextNode(egnosAddresses[l].childNodes[0].nodeValue);
+					// theDiv.appendChild(content);
+
+					//write in array
+					arrayEgnosAddr[k] = document.createTextNode(egnosAddresses[l].childNodes[0].nodeValue);
+
+					var assetNames = asset.getElementsByTagName("asset_name");
+
+					for (var m = 0; m < assetNames.length; m++) {
+
+						//console.log("Asset Name: " + assetNames[m].childNodes[0].nodeValue);
+
+						arrayAssetName[k] = document.createTextNode(assetNames[m].childNodes[0].nodeValue);
+
+						var parameters = asset.getElementsByTagName("parameter");
+
+						for (var n = 0; n < parameters.length; n++) {
+
+							var parameter = parameters[n];
+							var names = parameter.getElementsByTagName("name");
+
+							for (var o = 0; o < names.length; o++) {
+
+								//console.log("Parameter Name: " + names[o].childNodes[0].nodeValue);
+
+								//write in div
+								content = document.createTextNode(names[o].childNodes[0].nodeValue);
+							// theDiv.appendChild(content);
+
+								//write in array
+								arrayName[k] = document.createTextNode(names[o].childNodes[0].nodeValue);
+
+								var numbers = parameter.getElementsByTagName("number");
+
+								for (var p = 0; p < numbers.length; p++) {
+
+									//console.log("Parameter Number: " + numbers[p].childNodes[0].nodeValue);
+
+								//write in div
+								content = document.createTextNode(numbers[p].childNodes[0].nodeValue);
+								// theDiv.appendChild(content);
+
+								//write in array
+								arrayNumber[k] = document.createTextNode(numbers[p].childNodes[0].nodeValue);
+
+								var versions = parameter.getElementsByTagName("version");
+
+								for (var q = 0; q < versions.length; q++) {
+
+									//console.log("Version: " + versions[q].childNodes[0].nodeValue);
+
+									//write in div
+									content = document.createTextNode(versions[q].childNodes[0].nodeValue);
+									// theDiv.appendChild(content);
+
+									//write in array
+									arrayVers[k] = document.createTextNode(versions[q].childNodes[0].nodeValue);
+
+									var types = parameter.getElementsByTagName("type");
+
+									for (var r = 0; r < types.length; r++) {
+
+										//console.log("Type: " + types[r].childNodes[0].nodeValue);
+
+										arrayType[k] = document.createTextNode(types[r].childNodes[0].nodeValue);
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};			
+	};
+
+	}
+
+	function readXMLAuditFromSource(){
+
+		var theDiv = document.getElementById("table");
+		var content;
+
+		// var name = document.getElementById("fileInput");
+		
+		// name = name.value;
+		// alert("Name of file: " + name);
+		// document.getElementById("audit").innerHTML = name;
+
+		var name = "manual/audit.xml";
+
+		var request = new XMLHttpRequest();
+		request.open("GET",name,false);
+		request.send();
+		var xml = request.responseXML;
+
+		var audits = xml.getElementsByTagName("audit");
+
+		//Reading XML
+		for (var i = 0; i < audits.length; i++) {
+
+			var audit = audits[i];
+			var timestamps = audit.getElementsByTagName("timestamp");
+
+
+			var assets = audit.getElementsByTagName("asset");
+
+			for (var k = 0; k < assets.length; k++) {
+
+				//console.log("Timestamp: " + timestamps[k].childNodes[0].nodeValue);
+
+				//write in div
+				content = document.createTextNode(timestamps[k].childNodes[0].nodeValue);
+				// theDiv.appendChild(content);
+
+				//write in array
+				arrayTimestamps[k] = document.createTextNode(timestamps[k].childNodes[0].nodeValue);
+
+				var asset = assets[k];
+				var egnosAddresses = asset.getElementsByTagName("egnos_address");
+
+				for (var l = 0; l < egnosAddresses.length; l++) {
+
+					//console.log("EGNOS Address: " + egnosAddresses[l].childNodes[0].nodeValue);
+
+					//write in div
+					content = document.createTextNode(egnosAddresses[l].childNodes[0].nodeValue);
+					// theDiv.appendChild(content);
+
+					//write in array
+					arrayEgnosAddr[k] = document.createTextNode(egnosAddresses[l].childNodes[0].nodeValue);
+
+					var assetNames = asset.getElementsByTagName("asset_name");
+
+					for (var m = 0; m < assetNames.length; m++) {
+
+						//console.log("Asset Name: " + assetNames[m].childNodes[0].nodeValue);
+
+						arrayAssetName[k] = document.createTextNode(assetNames[m].childNodes[0].nodeValue);
+
+						var parameters = asset.getElementsByTagName("parameter");
+
+						for (var n = 0; n < parameters.length; n++) {
+
+							var parameter = parameters[n];
+							var names = parameter.getElementsByTagName("name");
+
+							for (var o = 0; o < names.length; o++) {
+
+								//console.log("Parameter Name: " + names[o].childNodes[0].nodeValue);
+
+								//write in div
+								content = document.createTextNode(names[o].childNodes[0].nodeValue);
+							// theDiv.appendChild(content);
+
+								//write in array
+								arrayName[k] = document.createTextNode(names[o].childNodes[0].nodeValue);
+
+								var numbers = parameter.getElementsByTagName("number");
+
+								for (var p = 0; p < numbers.length; p++) {
+
+									//console.log("Parameter Number: " + numbers[p].childNodes[0].nodeValue);
+
+								//write in div
+								content = document.createTextNode(numbers[p].childNodes[0].nodeValue);
+								// theDiv.appendChild(content);
+
+								//write in array
+								arrayNumber[k] = document.createTextNode(numbers[p].childNodes[0].nodeValue);
+
+								var versions = parameter.getElementsByTagName("version");
+
+								for (var q = 0; q < versions.length; q++) {
+
+									//console.log("Version: " + versions[q].childNodes[0].nodeValue);
+
+									//write in div
+									content = document.createTextNode(versions[q].childNodes[0].nodeValue);
+									// theDiv.appendChild(content);
+
+									//write in array
+									arrayVers[k] = document.createTextNode(versions[q].childNodes[0].nodeValue);
+
+									var types = parameter.getElementsByTagName("type");
+
+									for (var r = 0; r < types.length; r++) {
+
+										//console.log("Type: " + types[r].childNodes[0].nodeValue);
+
+										arrayType[k] = document.createTextNode(types[r].childNodes[0].nodeValue);
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};			
+	};
+
+	}
+
+/*****************************************************************************
+ * Name : createTable()
+ * Purpose : Create a table displaying the audit xml data 
+ * Argument I/O: Arrays 
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+	function createTable(arrayTimestamps,arrayEgnosAddr,arrayAssetName,arrayName,arrayNumber,arrayVers,arrayType){
+
+		var Tableau = document.getElementById("tableau");
+		
+		for (var i = 0; i < arrayTimestamps.length; i++) {
+
+			var j=0;
+			var ligne = Tableau.insertRow(i);
+			var cell1 = ligne.insertCell(j++);
+
+			cell1.innerHTML = arrayTimestamps[i].nodeValue;
+			
+			var cell2 = ligne.insertCell(j++);
+			
+			cell2.innerHTML = arrayEgnosAddr[i].nodeValue;
+
+			var cell3 = ligne.insertCell(j++);
+
+			cell3.innerHTML = arrayAssetName[i].nodeValue;
+
+			var cell4 = ligne.insertCell(j++);
+
+			cell4.innerHTML = arrayName[i].nodeValue;
+
+			var cell5 = ligne.insertCell(j++);
+
+			cell5.innerHTML = arrayNumber[i].nodeValue;
+
+			var cell6 = ligne.insertCell(j++);
+
+			cell6.innerHTML = arrayVers[i].nodeValue;
+
+			var cell7 = ligne.insertCell(j++);
+
+			cell7.innerHTML = arrayType[i].nodeValue;
+
+		};
+
+		createTableHeader();
+
+	}
+
+/*****************************************************************************
+ * Name : createTableHeader()
+ * Purpose : Insert the title row
+ * Argument I/O: None  
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+	function createTableHeader(){
+
+		var i = 0;
+		var Tableau = document.getElementById("tableau");
+		var head = Tableau.createTHead();
+		var row = head.insertRow(0);
+
+		var cell1 = row.insertCell(i++);
+		cell1.innerHTML = "<b>Timestamp</b>";
+
+		var cell2 = row.insertCell(i++);
+		cell2.innerHTML = "<b>EGNOS Address</b>";
+
+		var cell3 = row.insertCell(i++);
+		cell3.innerHTML = "<b>Asset Name</b>";
+
+		var cell4 = row.insertCell(i++);
+		cell4.innerHTML = "<b>Parameter Name</b>";
+
+		var cell5 = row.insertCell(i++);
+		cell5.innerHTML = "<b>Parameter Number</b>";
+
+		var cell6 = row.insertCell(i++);
+		cell6.innerHTML = "<b>Version</b>";
+
+		var cell7 = row.insertCell(i++);
+		cell7.innerHTML = "<b>Type</b>";
+	}
+
+/*****************************************************************************
+ * Name : readXMLSWCF()
+ * Purpose : Read the SWCF xml file
+ * Argument I/O: None  
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+		function readXMLSWCF(){
+
+		var theDiv = document.getElementById("table");
+		var content;
+
+		// var name = document.getElementById("fileInput2");
+
+		// name = name.value;
+		// alert("Name of file: " + name);
+		// document.getElementById("swcf").innerHTML = name;
+
+		var name = "SWCF/SWCF.xml";
+
+		var request = new XMLHttpRequest();
+		request.open("GET",name,false);
+		request.send();
+		var xml = request.responseXML;
+
+		
+		var confs = xml.getElementsByTagName("Configuration");
+
+		//Reading XML
+		for (var i = 0; i < confs.length; i++) {
+
+			var conf = confs[i];
+			var files = conf.getElementsByTagName("File");
+
+			for (var k = 0; k < files.length; k++) {
+
+				var file = files[k];
+				var filenames = file.getElementsByTagName("Filename");
+
+				for (var l = 0; l < filenames.length; l++) {
+
+					//write in array
+					arrayFilename[k] = document.createTextNode(filenames[l].childNodes[0].nodeValue);
+
+					var directories = file.getElementsByTagName("Directory");
+
+					for (var m = 0; m < directories.length; m++) {
+
+						arrayDirectory[k] = document.createTextNode(directories[m].childNodes[0].nodeValue);
+
+						var fileTypes = file.getElementsByTagName("FileType");
+
+						for (var n = 0; n < fileTypes.length; n++) {
+
+							arrayFileType[k] = document.createTextNode(fileTypes[n].childNodes[0].nodeValue);
+
+							var fileCodes = file.getElementsByTagName("FileCode");
+
+							for (var o = 0; o < fileCodes.length; o++) {
+
+								arrayFileCode[k] = document.createTextNode(fileCodes[o].childNodes[0].nodeValue);
+
+								var assets = file.getElementsByTagName("Asset");
+
+								for (var p = 0; p < assets.length; p++) {
+
+									arrayAsset[k] = document.createTextNode(assets[p].childNodes[0].nodeValue);
+
+									var egnosAddresses = file.getElementsByTagName("EgnosAddress");
+
+									for (var q = 0; q < egnosAddresses.length; q++) {
+
+										arrayEgnosAddress[k] = document.createTextNode(egnosAddresses[q].childNodes[0].nodeValue);
+
+										var versions = file.getElementsByTagName("Version");
+
+										for (var r = 0; r < versions.length; r++) {
+
+											arrayVersion[k] = document.createTextNode(versions[r].childNodes[0].nodeValue);
+
+											var md5s = file.getElementsByTagName("MD5Sum");
+
+											for (var s = 0; s < md5s.length; s++) {
+
+												arrayMD5[k] = document.createTextNode(md5s[s].childNodes[0].nodeValue);
+
+												var newFiles = file.getElementsByTagName("NewFile");
+
+												for (var t = 0; t < newFiles.length; t++) {
+
+													arrayNewFile[k] = document.createTextNode(newFiles[t].childNodes[0].nodeValue);
+
+												};
+											};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};			
+		};
+
+	}
+
+
+	function readXMLSWCFFromSource(){
+
+		var theDiv = document.getElementById("table");
+		var content;
+
+		// var name = document.getElementById("fileInput2");
+
+		// name = name.value;
+		// alert("Name of file: " + name);
+		// document.getElementById("swcf").innerHTML = name;
+
+		var name = "manual/SWCF.xml";
+
+		var request = new XMLHttpRequest();
+		request.open("GET",name,false);
+		request.send();
+		var xml = request.responseXML;
+
+		
+		var confs = xml.getElementsByTagName("Configuration");
+
+		//Reading XML
+		for (var i = 0; i < confs.length; i++) {
+
+			var conf = confs[i];
+			var files = conf.getElementsByTagName("File");
+
+			for (var k = 0; k < files.length; k++) {
+
+				var file = files[k];
+				var filenames = file.getElementsByTagName("Filename");
+
+				for (var l = 0; l < filenames.length; l++) {
+
+					//write in array
+					arrayFilename[k] = document.createTextNode(filenames[l].childNodes[0].nodeValue);
+
+					var directories = file.getElementsByTagName("Directory");
+
+					for (var m = 0; m < directories.length; m++) {
+
+						arrayDirectory[k] = document.createTextNode(directories[m].childNodes[0].nodeValue);
+
+						var fileTypes = file.getElementsByTagName("FileType");
+
+						for (var n = 0; n < fileTypes.length; n++) {
+
+							arrayFileType[k] = document.createTextNode(fileTypes[n].childNodes[0].nodeValue);
+
+							var fileCodes = file.getElementsByTagName("FileCode");
+
+							for (var o = 0; o < fileCodes.length; o++) {
+
+								arrayFileCode[k] = document.createTextNode(fileCodes[o].childNodes[0].nodeValue);
+
+								var assets = file.getElementsByTagName("Asset");
+
+								for (var p = 0; p < assets.length; p++) {
+
+									arrayAsset[k] = document.createTextNode(assets[p].childNodes[0].nodeValue);
+
+									var egnosAddresses = file.getElementsByTagName("EgnosAddress");
+
+									for (var q = 0; q < egnosAddresses.length; q++) {
+
+										arrayEgnosAddress[k] = document.createTextNode(egnosAddresses[q].childNodes[0].nodeValue);
+
+										var versions = file.getElementsByTagName("Version");
+
+										for (var r = 0; r < versions.length; r++) {
+
+											arrayVersion[k] = document.createTextNode(versions[r].childNodes[0].nodeValue);
+
+											var md5s = file.getElementsByTagName("MD5Sum");
+
+											for (var s = 0; s < md5s.length; s++) {
+
+												arrayMD5[k] = document.createTextNode(md5s[s].childNodes[0].nodeValue);
+
+												var newFiles = file.getElementsByTagName("NewFile");
+
+												for (var t = 0; t < newFiles.length; t++) {
+
+													arrayNewFile[k] = document.createTextNode(newFiles[t].childNodes[0].nodeValue);
+
+												};
+											};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};			
+		};
+
+	}
+
+
+/*****************************************************************************
+ * Name : createTableSWCF()
+ * Purpose : Create a table displaying the SWCF data
+ * Argument I/O: Data arrays
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+	function createTableSWCF(arrayFilename,arrayDirectory,arrayFileType,arrayFileCode,arrayAsset,arrayEgnosAddress,arrayVers,arrayMD5,arrayNewFile){
+
+		var Tableau = document.getElementById("tableauSWCF");
+		
+		for (var i = 0; i < arrayFilename.length; i++) {
+
+			var j=0;
+			var ligne = Tableau.insertRow(i);
+			var cell1 = ligne.insertCell(j++);
+
+			cell1.innerHTML = arrayFilename[i].nodeValue;
+			
+			var cell2 = ligne.insertCell(j++);
+			
+			cell2.innerHTML = arrayDirectory[i].nodeValue;
+
+			var cell3 = ligne.insertCell(j++);
+
+			cell3.innerHTML = arrayFileType[i].nodeValue;
+
+			var cell4 = ligne.insertCell(j++);
+
+			cell4.innerHTML = arrayFileCode[i].nodeValue;
+
+			var cell5 = ligne.insertCell(j++);
+
+			cell5.innerHTML = arrayAsset[i].nodeValue;
+
+			var cell6 = ligne.insertCell(j++);
+
+			cell6.innerHTML = arrayEgnosAddress[i].nodeValue;
+
+			var cell7 = ligne.insertCell(j++);
+
+			cell7.innerHTML = arrayVersion[i].nodeValue;
+
+			var cell8 = ligne.insertCell(j++);
+
+			cell8.innerHTML = arrayMD5[i].nodeValue;
+
+			var cell9 = ligne.insertCell(j++);
+
+			cell9.innerHTML = arrayNewFile[i].nodeValue;
+
+		};
+
+		createTableHeaderSWCF("tableauSWCF");
+
+	}
+
+/*****************************************************************************
+ * Name : createTableHeaderSWCF()
+ * Purpose : Insert title row to the SWCF table
+ * Argument I/O: None  
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+	function createTableHeaderSWCF(name){
+
+		var i = 0;
+		var Tableau = document.getElementById(name);
+		var head = Tableau.createTHead();
+		var row = head.insertRow(0);
+
+		var cell1 = row.insertCell(i++);
+		cell1.innerHTML = "<b>Filename</b>";
+
+		var cell2 = row.insertCell(i++);
+		cell2.innerHTML = "<b>Directory</b>";
+
+		var cell3 = row.insertCell(i++);
+		cell3.innerHTML = "<b>FileType</b>";
+
+		var cell4 = row.insertCell(i++);
+		cell4.innerHTML = "<b>FileCode</b>";
+
+		var cell5 = row.insertCell(i++);
+		cell5.innerHTML = "<b>Asset</b>";
+
+		var cell6 = row.insertCell(i++);
+		cell6.innerHTML = "<b>EGNOS Address</b>";
+
+		var cell7 = row.insertCell(i++);
+		cell7.innerHTML = "<b>Version</b>";
+
+		var cell8 = row.insertCell(i++);
+		cell8.innerHTML = "<b>MD5Sum</b>";
+
+		var cell9 = row.insertCell(i++);
+		cell9.innerHTML = "<b>NewFile</b>";
+	}
+
+	function testReadCsv() {
+
+		var name = document.getElementById("fileInput3");
+		name = name.value;
+
+		var request = new XMLHttpRequest();
+		request.open("GET",name,false);
+		request.send();
+		var xml = request.responseXML;
+
+		//console.log(xml);
+	}
+
+	//FOR CSV
+
+	// document.getElementById("fileInput3").addEventListener("change", function() {
+
+	// 		var fr = new FileReader();
+	// 		fr.onload = readCSV(fr);
+	// 		fr.readAsText(this.files[0]);
+	// 	});
+
+	function readCSV(fr) {
+
+		var name = document.getElementById("fileInput3");
+		
+		name = name.value;
+		alert(name);
+
+		var content;
+		var splitted;
+		var line;
+
+		// document.getElementById("fileInput3").addEventListener("change", function() {
+
+		// 	var fr = new FileReader();
+		// 	fr.onload = function() {
+				document.getElementById("test").textContent = this.result; //how does "THIS" work?
+				content = this.result;
+
+				//Split with each new line
+				splitted = content.split("\n");
+
+
+				//console.log("length of splitted: " + splitted.length);
+				//console.log("Split lines");
+				for (var i = 0; i < splitted.length; i++) {
+
+					//Split every semi colon
+					line = splitted[i].split(";");
+
+					//Extract data
+					arrayCSVEgnosAddr[i] = line[2];
+					arrayCSVFEESignSWVersion[i] = line[9];
+					arrayCSVFEESysContact[i] = line[14] + ";" + line[15] + ";" + line[16]; // V33.01;25/03/2016;benjamin.laurent@thalesaleniaspace.com
+
+				};
+
+				// console.log("length of arrayCSVEgnosAddr: " + arrayCSVEgnosAddr.length);
+				// for (var i = 0; i < arrayCSVEgnosAddr.length; i++) {
+				// 	console.log("line " + i + ": " + arrayCSVEgnosAddr[i]);
+				// 	console.log("line " + i + ": " + arrayCSVFEESignSWVersion[i]);
+				// 	console.log("line " + i + ": " + arrayCSVFEESysContact[i]);
+				// };
+
+				//Remove 1st and undefined indexes
+				arrayCSVEgnosAddr.splice(0,1);
+				arrayCSVFEESignSWVersion.splice(0,1);
+				arrayCSVFEESysContact.splice(0,1);
+				for (var i = 0; i < arrayCSVEgnosAddr.length; i++) {
+					if (!arrayCSVEgnosAddr[i] || !arrayCSVFEESignSWVersion[i] || !arrayCSVFEESysContact[i]) {
+						arrayCSVEgnosAddr.splice(i,1);
+						arrayCSVFEESignSWVersion.splice(i,1);
+						arrayCSVFEESysContact.splice(i,1);
+
+						i--;
+					};
+				};
+
+				//console.log("After splice: ");
+
+				for (var i = 0; i < arrayCSVEgnosAddr.length; i++) {
+					//console.log(i);
+					//console.log(arrayCSVEgnosAddr[i]);
+					//console.log(arrayCSVFEESignSWVersion[i]);
+					//console.log(arrayCSVFEESysContact[i]);
+				};
+
+				//Display the data in the table
+				createTableFEE(arrayCSVEgnosAddr,arrayCSVFEESignSWVersion,arrayCSVFEESysContact);
+			// }
+			// fr.readAsText(this.files[0]);
+
+			// console.log("OUTSIDE THE ONLOAD");
+
+			// for (var i = 0; i < arrayCSVEgnosAddr.length; i++) {
+			// 	console.log("HEYYYY " + i);
+			// 	console.log(arrayCSVEgnosAddr[i]);
+			// 	console.log(arrayCSVFEESignSWVersion[i]);
+			// 	console.log(arrayCSVFEESysContact[i]);
+			// };
+
+
+		// })
+
+	
+	
+
+	}
+
+	function createTableFEE(arrayCSVEgnosAddr,arrayCSVFEESignSWVersion,arrayCSVFEESysContact) {
+
+		var Tableau = document.getElementById("tableauFEE");
+		
+		for (var i = 0; i < arrayCSVEgnosAddr.length; i++) {
+
+			var j=0;
+			var ligne = Tableau.insertRow(i);
+			var cell1 = ligne.insertCell(j++);
+
+			cell1.innerHTML = arrayCSVEgnosAddr[i];
+			
+			var cell2 = ligne.insertCell(j++);
+			
+			cell2.innerHTML = arrayCSVFEESignSWVersion[i];
+
+			var cell3 = ligne.insertCell(j++);
+
+			cell3.innerHTML = arrayCSVFEESysContact[i];
+
+		};
+
+		createTableFEEHeader("tableauFEE");
+	}
+
+	function createTableFEEHeader(name) {
+
+		var i = 0;
+		var Tableau = document.getElementById(name);
+		var head = Tableau.createTHead();
+		var row = head.insertRow(0);
+
+		var cell1 = row.insertCell(i++);
+		cell1.innerHTML = "<b>EGNOS Address</b>";
+
+		var cell2 = row.insertCell(i++);
+		cell2.innerHTML = "<b>FEESignSWVersion</b>";
+
+		var cell3 = row.insertCell(i++);
+		cell3.innerHTML = "<b>FEESysContact</b>";
+	}
+
+/*****************************************************************************
+ * Name : compare()
+ * Purpose : Compare the versions from  audit and SWCF
+ * Argument I/O: None  
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+	function compare(){
+
+		var egnos = -1;
+		var timeOut = "N/A TIMEOUT"
+
+		//console.log("\n*****COMPARING*****");
+			
+
+		//Browse the audit asset name array
+		for (var i = 0; i < arrayAssetName.length; i++) {
+			
+			//Browse the SWCF asset name array 
+			for (var j = 0; j < arrayAsset.length; j++) {
+
+				//If same asset name
+				if (arrayAssetName[i].nodeValue == arrayAsset[j].nodeValue){
+
+					// console.log(arrayAssetName[i].nodeValue + " == " + arrayAsset[j].nodeValue);
+
+					//If same filecode
+					if (arrayNumber[i].nodeValue == arrayFileCode[j].nodeValue) {
+
+						// console.log("Same FileCode: " + arrayNumber[i].nodeValue + " == " + arrayFileCode[j].nodeValue);
+
+						//If same EGNOS address
+						if (((arrayEgnosAddr[i].nodeValue == arrayEgnosAddress[j].nodeValue) || (("0" + arrayEgnosAddr[i].nodeValue) == arrayEgnosAddress[j].nodeValue)) && arrayVers[i].nodeValue != timeOut) {
+
+							// console.log("Same EGNOS address: " + arrayEgnosAddr[i].nodeValue + " == " + arrayEgnosAddress[j].nodeValue);
+
+							//Fill result arrays
+							resultAsset[i] = arrayAssetName[i];
+							resultEgnosAddrAudit[i] = arrayEgnosAddr[i];
+							resultEgnosAddrSWCF[i] = arrayEgnosAddress[j];
+							resultNameAudit[i] = arrayName[i];
+							resultNameSWCF[i] = arrayFilename[j];
+							resultVersionAudit[i] = arrayVers[i];
+							resultVersionSWCF[i] = arrayVersion[j];
+							resultFileCode[i] = arrayFileCode[j];
+
+							//If same everything except the EGNOS Address (N/A for common files)
+						}else if (arrayEgnosAddress[j].nodeValue == "N/A" && arrayVers[i].nodeValue != timeOut){
+
+							// console.log("NOT same EGNOS address: " + arrayEgnosAddr[i].nodeValue + " != " + arrayEgnosAddress[j].nodeValue);
+
+							//Fill result arrays
+							resultAsset[i] = arrayAssetName[i];
+							resultEgnosAddrAudit[i] = arrayEgnosAddr[i];
+							resultEgnosAddrSWCF[i] = arrayEgnosAddress[j];
+							resultNameAudit[i] = arrayName[i];
+							resultNameSWCF[i] = arrayFilename[j];
+							resultVersionAudit[i] = arrayVers[i];
+							resultVersionSWCF[i] = arrayVersion[j];
+							resultFileCode[i] = arrayFileCode[j];
+
+						} else {
+							// console.log("NOT same EGNOS address: " + arrayEgnosAddr[i].nodeValue + " != " + arrayEgnosAddress[j].nodeValue);
+						};
+
+						
+
+
+					}else {
+						// console.log("Not same FileCode: " + arrayNumber[i].nodeValue + " != " + arrayFileCode[j].nodeValue);
+					};
+				};
+				
+			};
+
+		};
+
+		// console.log("\nRESULTS BEFORE SPLICE: ");
+		// for (var i = 0; i < resultAsset.length; i++) {
+			// console.log(i);
+			// console.log(resultAsset[i]);
+			// console.log(resultEgnosAddrAudit[i]);
+			// console.log(resultEgnosAddrSWCF[i]);
+			// console.log(resultNameAudit[i]);
+			// console.log(resultNameSWCF[i]);
+			// console.log(resultVersionAudit[i]);
+			// console.log(resultVersionSWCF[i]);
+		// };
+
+		//console.log("\n***********\nsize of resultAsset:" + resultAsset.length);
+
+		//Remove the empty indexes
+		for (var i = 0; i < resultAsset.length; i++) {
+			if (!resultAsset[i]) {
+
+				// console.log("Empty " + i);
+
+				// console.log("SPLICING " + i);
+
+				resultAsset.splice(i,1);
+				resultEgnosAddrAudit.splice(i,1);
+				resultEgnosAddrSWCF.splice(i,1);
+				resultNameAudit.splice(i,1);
+				resultNameSWCF.splice(i,1);
+				resultVersionAudit.splice(i,1);
+				resultVersionSWCF.splice(i,1);
+				resultFileCode.splice(i,1);
+
+				i--;
+			};
+			
+		};
+
+		//console.log("\n***********\nsize of resultAsset:" + resultAsset.length);
+
+		// console.log("\nRESULTS AFTER SPLICE: ");
+		// for (var i = 0; i < resultAsset.length; i++) {
+		// 	console.log(i);
+		// 	console.log(resultAsset[i]);
+		// 	console.log(resultEgnosAddrAudit[i]);
+		// 	console.log(resultEgnosAddrSWCF[i]);
+		// 	console.log(resultNameAudit[i]);
+		// 	console.log(resultNameSWCF[i]);
+		// 	console.log(resultVersionAudit[i]);
+		// 	console.log(resultVersionSWCF[i]);
+		// };
+
+
+		//console.log("\n***********\nVERSION COMPARISON");
+		//Version comparison
+		for (var i = 0; i < resultVersionAudit.length; i++) {
+			//if (resultVersionSWCF[i].nodeValue.includes(resultVersionAudit[i].nodeValue)) {
+			if (resultVersionSWCF[i].nodeValue == resultVersionAudit[i].nodeValue) {
+				resultColor[i] = 1;
+				// console.log(resultColor[i]);
+			}else {
+				resultColor[i] = 0;
+				// console.log(resultColor[i]);
+				 //console.log(resultVersionAudit[i].nodeValue + " not included in " + resultVersionSWCF[i].nodeValue);
+			};
+			
+		};
+
+
+		//console.log("length of resultNameSWCF " + resultNameSWCF.length);
+		//console.log("length of resultNameAudit " + resultNameAudit.length);
+		//console.log("length of resultFileCode " + resultFileCode.length);
+
+		for (var i = 0; i < resultNameSWCF.length; i++) {
+			//console.log("result SWCF Filename " + resultNameSWCF[i].nodeValue);
+			//console.log("result FileCode " + resultFileCode[i].nodeValue);
+		};
+
+		//console.log("*****END COMPARISON*****");
+
+		//createTableResult(resultAsset,resultEgnosAddrAudit,resultEgnosAddrSWCF,resultNameAudit,resultNameSWCF,resultFileCode,resultVersionAudit,resultVersionSWCF);
+
+		//Creating result tables
+		createTableResultDiff(resultAsset,resultEgnosAddrAudit,resultEgnosAddrSWCF,resultNameAudit,resultNameSWCF,resultFileCode,resultVersionAudit,resultVersionSWCF);
+
+		createTableMissing();
+
+		createTableResultSame(resultAsset,resultEgnosAddrAudit,resultEgnosAddrSWCF,resultNameAudit,resultNameSWCF,resultFileCode,resultVersionAudit,resultVersionSWCF);
+
+		createTableHeaderResult();
+
+		//createTableMissing();
+	};
+
+	function createTableResultDiff(resultAsset,resultEgnosAddrAudit,resultEgnosAddrSWCF,resultNameAudit,resultNameSWCF,resultFileCode,resultVersionAudit,resultVersionSWCF){
+
+		document.getElementById("result").innerHTML = "Comparison results";
+		var Tableau = document.getElementById("tableauResult");
+		var rowLine = 0;
+
+		var rows = Tableau.getElementsByTagName("tr");
+
+		for (var i = 0; i < resultColor.length; i++) {
+			
+			if (resultColor[i] == 0) {
+
+				var j=0;
+				var ligne = Tableau.insertRow(rowLine++);
+				var cell1 = ligne.insertCell(j++);
+
+				cell1.innerHTML = resultAsset[i].nodeValue;
+				
+				var cell2 = ligne.insertCell(j++);
+
+				cell2.innerHTML = resultEgnosAddrAudit[i].nodeValue;
+
+				var cell3 = ligne.insertCell(j++);
+
+				cell3.innerHTML = resultEgnosAddrSWCF[i].nodeValue;
+
+				var cell4 = ligne.insertCell(j++);
+
+				cell4.innerHTML = resultNameAudit[i].nodeValue;
+
+				var cell5 = ligne.insertCell(j++);
+
+				cell5.innerHTML = resultNameSWCF[i].nodeValue;
+
+				var cell6 = ligne.insertCell(j++);
+
+				cell6.innerHTML = resultFileCode[i].nodeValue;
+
+				var cell7 = ligne.insertCell(j++);
+
+				cell7.innerHTML = resultVersionSWCF[i].nodeValue;
+
+				var cell8 = ligne.insertCell(j++);
+
+				cell8.innerHTML = resultVersionAudit[i].nodeValue;
+
+			};
+		};
+
+		//Color in red
+		for (var i = 0; i < rows.length; i++) {
+			rows[i].cells[7].style.backgroundColor = "#cc0000";
+		};
+	}
+
+	function createTableResultSame(resultAsset,resultEgnosAddrAudit,resultEgnosAddrSWCF,resultNameAudit,resultNameSWCF,resultFileCode,resultVersionAudit,resultVersionSWCF){
+
+		document.getElementById("result").innerHTML = "Comparison results";
+		var Tableau = document.getElementById("tableauResult");
+		var rows = Tableau.getElementsByTagName("tr");
+
+		var rowLine = rows.length;
+		var rowLineSave = rowLine;
+		
+
+		for (var i = 0; i < resultColor.length; i++) {
+			
+			if (resultColor[i] == 1) {
+
+				var j=0;
+				var ligne = Tableau.insertRow(rowLine++);
+				var cell1 = ligne.insertCell(j++);
+
+				cell1.innerHTML = resultAsset[i].nodeValue;
+				
+				var cell2 = ligne.insertCell(j++);
+
+				cell2.innerHTML = resultEgnosAddrAudit[i].nodeValue;
+
+				var cell3 = ligne.insertCell(j++);
+
+				cell3.innerHTML = resultEgnosAddrSWCF[i].nodeValue;
+
+				var cell4 = ligne.insertCell(j++);
+
+				cell4.innerHTML = resultNameAudit[i].nodeValue;
+
+				var cell5 = ligne.insertCell(j++);
+
+				cell5.innerHTML = resultNameSWCF[i].nodeValue;
+
+				var cell6 = ligne.insertCell(j++);
+
+				cell6.innerHTML = resultFileCode[i].nodeValue;
+
+				var cell7 = ligne.insertCell(j++);
+
+				cell7.innerHTML = resultVersionSWCF[i].nodeValue;
+
+				var cell8 = ligne.insertCell(j++);
+
+				cell8.innerHTML = resultVersionAudit[i].nodeValue;
+
+			};
+		};
+
+		//Color in Green
+		for (var i = rowLineSave; i < rows.length; i++) {
+			// if (rows[i].cells[7].style.backgroundColor != "#cc0000") {
+				rows[i].cells[7].style.backgroundColor = "#00cc00";
+			// };
+		};
+
+	}
+
+/*****************************************************************************
+ * Name : createTableHeaderResult()
+ * Purpose : Create a table displaying the results of the comparison 
+ * Argument I/O: None  
+ * I/O Files: No input file
+ * Returns : 
+ * *************************************************************************/
+	function createTableHeaderResult(){
+
+		var i = 0;
+		var Tableau = document.getElementById("tableauResult");
+		var head = Tableau.createTHead();
+		var row = head.insertRow(0);
+
+		var cell1 = row.insertCell(i++);
+		cell1.innerHTML = "<b>Asset</b>";
+
+		var cell2 = row.insertCell(i++);
+		cell2.innerHTML = "<b>Audit Egnos Address</b>";
+
+		var cell3 = row.insertCell(i++);
+		cell3.innerHTML = "<b>SWCF Egnos Address</b>";
+
+		var cell4 = row.insertCell(i++);
+		cell4.innerHTML = "<b>Audit Filename</b>";
+
+		var cell5 = row.insertCell(i++);
+		cell5.innerHTML = "<b>SWCF Filename</b>";
+
+		var cell6 = row.insertCell(i++);
+		cell6.innerHTML = "<b>FileCode</b>";
+
+		var cell7 = row.insertCell(i++);
+		cell7.innerHTML = "<b>SWCF Version</b>";
+
+		var cell8 = row.insertCell(i++);
+		cell8.innerHTML = "<b>Audit Version</b>";
+	}
+	
+
+	function createTableMissing() {
+
+		//var Tableau = document.getElementById("tableauMissing");
+
+
+		document.getElementById("result").innerHTML = "Comparison results";
+		var Tableau = document.getElementById("tableauResult");
+		var rows = Tableau.getElementsByTagName("tr");
+
+		var rowLine = rows.length;
+
+
+		var next = false;
+
+		for (var i = 0; i < arrayFilename.length; i++) {
+
+			for (var j = 0; j < resultNameAudit.length; j++) {
+				
+				if (arrayFilename[i].nodeValue == resultNameAudit[j].nodeValue) {
+
+					if (arrayEgnosAddress[i].nodeValue == resultEgnosAddrAudit[j].nodeValue) {
+						
+						next = true;
+					};
+				};
+
+			};
+
+			if (next) {
+
+				next = false;
+				continue;
+
+			} else{
+
+				var j=0;
+				var ligne = Tableau.insertRow(rowLine);
+				var cell1 = ligne.insertCell(j++);
+
+				cell1.innerHTML = arrayAsset[i].nodeValue;
+
+				var cell2 = ligne.insertCell(j++);
+
+				cell2.innerHTML = "";
+
+				var cell3 = ligne.insertCell(j++);
+
+				cell3.innerHTML = arrayEgnosAddress[i].nodeValue;
+
+				var cell4 = ligne.insertCell(j++);
+
+				cell4.innerHTML = "";
+
+				var cell5 = ligne.insertCell(j++);
+
+				cell5.innerHTML = arrayFilename[i].nodeValue;
+
+				var cell6 = ligne.insertCell(j++);
+
+				cell6.innerHTML = arrayFileCode[i].nodeValue;
+
+				var cell7 = ligne.insertCell(j++);
+
+				cell7.innerHTML = arrayVersion[i].nodeValue;
+
+				var cell8 = ligne.insertCell(j++);
+
+				cell8.innerHTML = "";
+
+				// var cell9 = ligne.insertCell(j++);
+
+				// cell9.innerHTML = arrayNewFile[i].nodeValue;
+
+			};
+		};
+
+		// alert("HEY");
+		// var isEmpty = document.getElementById("tableauMissing").innerHTML;
+		// var title = document.getElementById("missing");
+
+		
+		// if (isEmpty !== undefined) {
+		// 	// alert("NOT EMPTY");
+		// 	title.style.display = "block";
+		// };
+		// createTableHeaderSWCF("tableauMissing");
+
+
+	}
+
+
+	function eraseTable(){
+
+		var Tableau = document.getElementById("tableauResult");
+		var rows = Tableau.getElementsByTagName("tr");
+		var rowLine = rows.length;
+
+		while (Tableau.rows.length > 0) {
+			Tableau.deleteRow(0);
+		}
+
+	}
+	</script>
+</body>
+
+</html>
