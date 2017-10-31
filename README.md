@@ -20,3 +20,6 @@ Comparison is done according to:
 - File name
 - File code
 - Version
+
+Comparison is done automatically when Audit_comparison.html is opened. It will compare the audit.xml found in current/ directory with SWCF.xml found in SWCF/ directory.
+However, another comparison can be "manually" done by putting audit.xml and SWCF.xml files in manual/ directory.
